@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bread Cooking Tycoon</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fff1c9;color:#4b3525}
+.app{max-width:520px;margin:auto;padding:14px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+h1{font-size:24px;margin:0;color:#e85d8f}.money{background:white;padding:10px 15px;border-radius:18px;font-weight:bold;box-shadow:0 3px 10px #0001}
+button{border:0;border-radius:15px;padding:12px;font-weight:bold;font-size:15px;cursor:pointer}
+.ingredients{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.ingredients button{min-width:90px;background:white;border:3px solid #eadcff}
+.bowl{height:280px;border-radius:50%;background:linear-gradient(#eee,#ccc);border:9px solid white;box-shadow:inset 0 5px 15px #0002;display:flex;align-items:center;justify-content:center;text-align:center;margin:10px 0}
+.bowl-icon{font-size:55px}.contents{font-weight:bold;max-width:230px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.green{background:#43c96b;color:white}.orange{background:#f59a3d;color:white}.blue{background:#5599ed;color:white}.yellow{background:#f2bd3e;color:white}.red{background:#e94e59;color:white}.dark{background:#443b46;color:white}.purple{background:#8b55d9;color:white}
+.card{background:white;border-radius:22px;padding:15px;margin-top:14px;box-shadow:0 3px 12px #0001}
+.msg{background:#fff4bc;padding:12px;border-radius:15px;margin-top:8px}
+.recipe{background:#f7f7f7;border-radius:15px;padding:12px;margin:8px 0}
+.recipe button{background:#45bd65;color:white;margin-top:7px}
+.hidden{background:#eee1ff}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:20px}
+.modal.show{display:flex}.panel{background:white;border-radius:25px;padding:20px;width:min(460px,100%);max-height:90vh;overflow:auto}
+.panel h2{margin-top:0}.row{display:flex;gap:8px;margin:8px 0}.row>*{flex:1}
+input,select{width:100%;padding:11px;border:2px solid #ddd;border-radius:12px;font-size:15px}
+.small{font-size:13px;color:#777}.close{float:right;background:#ddd}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <button class="dark" onclick="openSettings()">⚙ 설정</button>
+  <h1>🍞 Bread Cooking Tycoon</h1>
+  <div class="money">💰 <span id="money">0</span>원</div>
+</header>
+
+<div class="ingredients" id="ingredients"></div>
+
+<div class="bowl">
+  <div>
+    <div class="bowl-icon">🥣</div>
+    <div class="contents" id="bowl">재료 없음</div>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="green" onclick="makeFood()">🍳 만들기</button>
+  <button class="orange" onclick="bake()">🔥 오븐으로 가기</button>
+  <button class="blue" onclick="stretch()">↔ 늘리기</button>
+  <button class="yellow" onclick="sellFood()">🧍 손님에게 주기</button>
+</div>
+<button class="red" style="width:100%;margin-top:9px" onclick="resetBowl()">❌ 초기화</button>
+
+<div class="card">
+  <b>🍞 현재 음식</b>
+  <div id="food" style="font-size:20px;margin-top:8px">없음</div>
+  <div class="msg" id="message">재료를 넣어주세요!</div>
+</div>
+
+<div class="card">
+  <h2>📖 일반 레시피북</h2>
+  <div class="recipe"><b>🍞 빵</b><br>밀가루×2 물×1 🔥굽기</div>
+  <div id="normalRecipes"></div>
+<h3 style="margin-top:16px">🧑‍🍳 내가 만든 레시피</h3>
+<div id="customBook"></div>
+</div>
+
+<div class="card hidden">
+  <h2>👑 히든 레시피북</h2>
+  <button class="purple" onclick="buyHiddenBook()">10000원으로 구매</button>
+  <div id="hiddenRecipes" class="small" style="margin-top:10px">구매하면 히든 레시피가 공개됩니다.</div>
+</div>
+</div>
+
+<div class="modal" id="settings">
+<div class="panel">
+<button class="close" onclick="closeSettings()">닫기</button>
+<h2>⚙ 설정</h2>
+
+<div class="card">
+<h3>🎁 실패 보상</h3>
+<div class="small">잘못 만든 음식도 1,000~100,000원 중 랜덤으로 보상받습니다.</div>
+</div>
+
+<div class="card">
+<h3>💰 돈 늘리기</h3>
+<div class="row">
+<input id="moneyAmount" type="number" min="0" placeholder="금액">
+<button class="green" onclick="addMoney()">추가</button>
+</div>
+</div>
+
+<div class="card">
+<h3>🧪 새로운 재료 추가</h3>
+<div class="row">
+<input id="newIngredient" placeholder="새 재료 이름">
+<button class="blue" onclick="addNewIngredient()">추가</button>
+</div>
+<div class="small">추가한 재료는 검정색 뒤에 나타나고, 나만의 레시피에서도 사용할 수 있어요.</div>
+</div>
+
+<div class="card">
+<h3>🧑‍🍳 나만의 레시피 만들기</h3>
+<input id="customName" placeholder="음식 이름">
+<div id="customIngredients"></div>
+<button class="blue" style="margin-top:8px" onclick="addCustomIngredient()">+ 재료 추가</button>
+<div class="row">
+<label>굽기<input id="customBake" type="checkbox"></label>
+<label>늘리기<input id="customStretch" type="checkbox"></label>
+</div>
+<select id="customPrice">
+<option value="0">무료</option>
+<option value="1000">1000원</option>
+<option value="2000">2000원</option>
+<option value="3000">3000원</option>
+<option value="5000">5000원</option>
+<option value="10000">10000원</option>
+</select>
+<button class="purple" style="width:100%;margin-top:8px" onclick="saveCustomRecipe()">레시피 만들기</button>
+</div>
+<div id="customList"></div>
+</div>
+</div>
+
+<script>
+const ingredients=["밀가루","물","소금","소세지","계란","빨간색","주황색","노란색","초록색","파란색","남색","보라색","갈색","검정색"];
+const recipes=[
+{name:"소금빵",i:{밀가루:3,물:1,소금:1},b:1,s:0,p:1000,c:500},
+{name:"바게트",i:{밀가루:2,물:1},b:1,s:1,p:1000,c:500},
+{name:"소세지빵",i:{밀가루:1,물:2,소세지:1},b:1,s:0,p:1000,c:1000},
+{name:"계란빵",i:{밀가루:3,물:1,계란:2},b:0,s:0,p:1000,c:1000}
+];
+const hidden=[
+{name:"피자",i:{밀가루:2,물:3,검정색:1,주황색:1,소금:1,소세지:1},b:1,s:0,p:2000},
+{name:"마라탕",i:{밀가루:1,물:4,빨간색:1,소금:1},b:0,s:0,p:2500},
+{name:"버터떡",i:{밀가루:4,물:2,주황색:1},b:1,s:0,p:3000},
+{name:"두쫀쿠",i:{밀가루:5,초록색:2,물:3},b:1,s:0,p:5000}
+];
+const fails=["돌빵","괴물빵","탄빵","이상한빵","젤리빵","미친빵","무지개빵","우주빵","고무빵","괴상한빵","폭신한 돌빵","수상한빵","외계인빵","폭발빵","거대빵"];
+let bowl={},money=0,baked=false,stretched=false,food=null,owned=["빵"],hiddenOwned=false,custom=[];
+
+function renderIngredients(){
+  ingredientsEl.innerHTML=ingredients.map(x=>`<button onclick="addIngredient('${x}')">${x}</button>`).join("");
+}
+const ingredientsEl=document.getElementById("ingredients");
+
+function addNewIngredient(){
+  const input=document.getElementById("newIngredient");
+  const name=input.value.trim();
+  if(!name){msg("재료 이름을 입력하세요!");return}
+  if(ingredients.includes(name)){msg("이미 있는 재료입니다!");return}
+  ingredients.push(name);
+  renderIngredients();
+  input.value="";
+  msg(name+" 재료가 추가되었습니다!");
+}
+function addIngredient(x){bowl[x]=(bowl[x]||0)+1;renderBowl()}
+function renderBowl(){document.getElementById("bowl").innerHTML=Object.keys(bowl).length?Object.entries(bowl).map(([k,v])=>`${k} × ${v}`).join("<br>"):"재료 없음"}
+function same(a,b){let ak=Object.keys(a),bk=Object.keys(b);if(ak.length!==bk.length)return false;return ak.every(k=>a[k]===b[k])}
+function findRecipe(){let all=recipes.concat(hiddenOwned?hidden:[],custom);return all.find(r=>same(r.i,bowl)&&r.b===+baked&&r.s===+stretched)}
+function makeFood(){let r=findRecipe();if(r){food=r;document.getElementById("food").textContent=r.name;msg(r.name+" 완성!")}else{let n=fails[Math.floor(Math.random()*fails.length)];food={name:n,p:0,failed:true};document.getElementById("food").textContent=n;msg(n+" 입니다! 다시 하시오!")}}
+function bake(){baked=true;msg("🔥 오븐에서 구웠습니다!")}
+function stretch(){stretched=true;msg("↔ 길쭉하게 늘렸습니다!")}
+function resetBowl(){bowl={};baked=false;stretched=false;food=null;document.getElementById("food").textContent="없음";renderBowl();msg("초기화 완료!")}
+function sellFood(){
+  if(!food){msg("먼저 음식을 만들어주세요!");return}
+  if(food.failed){
+    const gain = Math.random() < 0.5;
+    if(gain){
+      money += 1000;
+      msg(food.name+" 판매! +1,000원");
+    }else{
+      money = Math.max(0,money-1000);
+      msg(food.name+" 판매! -1,000원");
+    }
+    updateMoney();
+    setTimeout(resetBowl,800);
+    return;
+  }
+  money += food.p;
+  updateMoney();
+  msg(food.name+" 판매 완료! +"+food.p.toLocaleString()+"원");
+  setTimeout(resetBowl,800);
+}
+function msg(x){document.getElementById("message").textContent=x}
+function updateMoney(){document.getElementById("money").textContent=money}
+function buyRecipe(n){let r=recipes.find(x=>x.name===n);if(owned.includes(n)){msg("이미 구매했습니다!");return}if(money<r.c){msg("돈이 부족합니다!");return}money-=r.c;owned.push(n);updateMoney();renderNormal();msg(n+" 레시피 공개!")}
+function renderNormal(){document.getElementById("normalRecipes").innerHTML=recipes.map(r=>owned.includes(r.name)?`<div class="recipe"><b>${r.name}</b><br>${format(r)}</div>`:`<div class="recipe"><b>${r.name}</b><br>🔒 레시피 잠김<br><button onclick="buyRecipe('${r.name}')">${r.c}원 구매</button></div>`).join("")}
+function buyHiddenBook(){if(hiddenOwned){msg("이미 구매했습니다!");return}if(money<10000){msg("돈이 부족합니다!");return}money-=10000;hiddenOwned=true;updateMoney();document.getElementById("hiddenRecipes").innerHTML=hidden.map(r=>`<div class="recipe"><b>${r.name}</b><br>${format(r)}<br>판매가격: ${r.p}원</div>`).join("");msg("히든 레시피북 구매 완료!")}
+function format(r){return Object.entries(r.i).map(([k,v])=>k+"×"+v).join(" ") +(r.b?" 🔥굽기":"")+(r.s?" ↔늘리기":"")}
+function openSettings(){document.getElementById("settings").classList.add("show")}
+function closeSettings(){document.getElementById("settings").classList.remove("show")}
+function addMoney(){let n=Number(document.getElementById("moneyAmount").value);if(n>0){money+=n;updateMoney();msg(n+"원 추가!");document.getElementById("moneyAmount").value=""}}
+let ci=[];
+function renderCustomBook(){
+  document.getElementById("customBook").innerHTML = custom.length
+    ? custom.map(r=>`<div class="recipe"><b>${r.name}</b><br>${format(r)}<br>판매가격: ${r.p===0?"무료":r.p+"원"}</div>`).join("")
+    : '<div class="small">아직 만든 레시피가 없습니다.</div>';
+}
+function addCustomIngredient(){let d=document.createElement("div");d.className="row";d.innerHTML=`<select>${ingredients.map(x=>`<option>${x}</option>`).join("")}</select><input type="number" min="1" value="1"><button onclick="this.parentElement.remove()">삭제</button>`;document.getElementById("customIngredients").appendChild(d)}
+function saveCustomRecipe(){let name=document.getElementById("customName").value.trim();if(!name){alert("음식 이름을 입력하세요.");return}let i={};document.querySelectorAll("#customIngredients .row").forEach(row=>{let k=row.children[0].value,v=Number(row.children[1].value);i[k]=(i[k]||0)+v});if(!Object.keys(i).length){alert("재료를 하나 이상 추가하세요.");return}let r={name,i,b:+document.getElementById("customBake").checked,s:+document.getElementById("customStretch").checked,p:Number(document.getElementById("customPrice").value)};custom.push(r);
+renderCustomBook();
+document.getElementById("customList").innerHTML+=`<div class="recipe"><b>${name}</b><br>${format(r)}<br>판매가격: ${r.p}원</div>`;
+document.getElementById("customName").value="";document.getElementById("customIngredients").innerHTML="";msg(name+" 레시피가 만들어졌습니다!")}
+renderIngredients();renderNormal();renderCustomBook();renderBowl();updateMoney();
+</script>
+</body>
+</html>
